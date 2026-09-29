@@ -97,6 +97,41 @@ const emptyLineup = () => ({
   benchReplacements: [],
 });
 
+const coerceLineup = (lineup?: Partial<Team['lineup']>): Team['lineup'] => {
+  const safeLineup = lineup && typeof lineup === 'object' ? lineup : {};
+  const positions = Array.isArray(safeLineup.positions) && safeLineup.positions.length ? safeLineup.positions : emptyLineup().positions;
+
+  return {
+    positions: positions.map((assignment, index) => ({
+      position: (assignment as LineupAssignment)?.position ?? POSITIONS[index]?.key ?? 'front-left',
+      playerId: (assignment as LineupAssignment)?.playerId ?? null,
+    })),
+    benchOrder: Array.isArray(safeLineup.benchOrder) ? safeLineup.benchOrder.filter((id): id is string => typeof id === 'string') : [],
+    benchReplacements: Array.isArray(safeLineup.benchReplacements)
+      ? safeLineup.benchReplacements.filter(
+          (entry): entry is { playerId: string; replacesPlayerId: string | null } =>
+            !!entry && typeof entry === 'object' && typeof (entry as { playerId?: unknown }).playerId === 'string',
+        )
+      : [],
+  };
+};
+
+const hydrateTeam = (team: Partial<Team>): Team => ({
+  id: typeof team.id === 'string' ? team.id : `team-${Date.now()}`,
+  name: typeof team.name === 'string' && team.name.trim() ? team.name : 'Untitled team',
+  updatedAt: typeof team.updatedAt === 'string' ? team.updatedAt : new Date().toISOString(),
+  players: Array.isArray(team.players)
+    ? team.players.map((player) => ({
+        id: typeof player?.id === 'string' ? player.id : `player-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        name: typeof player?.name === 'string' && player.name.trim() ? player.name : 'Unnamed player',
+        role: normalizeRole(player?.role),
+        available: Boolean(player?.available),
+        note: typeof player?.note === 'string' ? player.note : null,
+      }))
+    : [],
+  lineup: coerceLineup(team.lineup),
+});
+
 const initialTeams: Team[] = [
   {
     id: 'team-1',
@@ -146,22 +181,29 @@ const initials = (name: string) =>
 
 function App() {
   const [teams, setTeams] = useState<Team[]>(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    if (typeof window === 'undefined') return initialTeams;
+    const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return initialTeams;
     try {
-      const parsed = JSON.parse(raw) as Team[];
-      return parsed.map((team) => ({
-        ...team,
-        players: (team.players ?? []).map((player) => ({
-          ...player,
-          role: normalizeRole(player.role),
-        })),
-      }));
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return initialTeams;
+      return parsed.map((team) => hydrateTeam(team as Partial<Team>));
     } catch {
       return initialTeams;
     }
   });
-  const [selectedTeamId, setSelectedTeamId] = useState<string>(initialTeams[0].id);
+  const [selectedTeamId, setSelectedTeamId] = useState<string>(() => {
+    if (typeof window === 'undefined') return initialTeams[0]?.id ?? '';
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return initialTeams[0]?.id ?? '';
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed) || !parsed.length) return initialTeams[0]?.id ?? '';
+      return hydrateTeam(parsed[0] as Partial<Team>).id;
+    } catch {
+      return initialTeams[0]?.id ?? '';
+    }
+  });
   const [showCreate, setShowCreate] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
   const [sharedRotation, setSharedRotation] = useState<{
@@ -181,6 +223,11 @@ function App() {
   }, [teams, selectedTeamId]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      setSharedRotation(null);
+      return;
+    }
+
     const params = new URLSearchParams(window.location.search);
     const raw = params.get('view');
     if (!raw) {
@@ -189,39 +236,33 @@ function App() {
     }
 
     try {
-      const parsed = JSON.parse(raw) as {
+      const parsed = JSON.parse(raw) as Partial<{
         teamName: string;
         players: Player[];
         lineup: { positions: LineupAssignment[]; benchOrder: string[]; benchReplacements: Array<{ playerId: string; replacesPlayerId: string | null }> };
-      };
-      setSharedRotation(parsed);
+      }>;
+      if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.players) || !parsed.lineup || !Array.isArray(parsed.lineup.positions)) {
+        setSharedRotation(null);
+        return;
+      }
+
+      setSharedRotation({
+        teamName: typeof parsed.teamName === 'string' && parsed.teamName.trim() ? parsed.teamName : 'Volleyball lineup',
+        players: parsed.players.map((player) => ({
+          id: typeof player?.id === 'string' ? player.id : `player-${Math.random().toString(16).slice(2)}`,
+          name: typeof player?.name === 'string' && player.name.trim() ? player.name : 'Unnamed player',
+          role: normalizeRole(player?.role),
+          available: Boolean(player?.available),
+          note: typeof player?.note === 'string' ? player.note : null,
+        })),
+        lineup: coerceLineup(parsed.lineup),
+      });
     } catch {
       setSharedRotation(null);
     }
   }, []);
 
   const selectedTeam = teams.find((team) => team.id === selectedTeamId) ?? teams[0] ?? null;
-
-  const shareCurrentRotation = () => {
-    const payload = { teamName: selectedTeam?.name ?? 'Volleyball lineup', players: selectedTeam?.players ?? [], lineup: selectedTeam?.lineup ?? emptyLineup() };
-    const params = new URLSearchParams({ view: JSON.stringify(payload) });
-    const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
-    window.history.replaceState({}, '', url);
-    window.alert('View-only share link ready in the address bar.');
-  };
-
-  const copyCurrentShareLink = async () => {
-    if (!selectedTeam) return;
-    const payload = { teamName: selectedTeam.name, players: selectedTeam.players, lineup: selectedTeam.lineup };
-    const params = new URLSearchParams({ view: JSON.stringify(payload) });
-    const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      window.alert('View-only link copied to clipboard.');
-    } catch {
-      window.prompt('Copy this view-only link:', url);
-    }
-  };
 
   const clearSharedRotation = () => {
     const url = new URL(window.location.href);
@@ -280,6 +321,11 @@ function App() {
 
   const onAddBenchPlayer = (playerId: string) => {
     if (!selectedTeam || !playerId) return;
+
+    const isOnCourt = selectedTeam.lineup.positions.some((assignment) => assignment.playerId === playerId);
+    const isAlreadyBenched = selectedTeam.lineup.benchOrder.includes(playerId);
+    if (isOnCourt || isAlreadyBenched) return;
+
     const nextBench = [...selectedTeam.lineup.benchOrder, playerId];
     const starters = selectedTeam.lineup.positions
       .map((assignment) => assignment.playerId)
@@ -375,6 +421,11 @@ function App() {
     };
   }, [selectedTeam]);
 
+  const applySuggestedRotation = (suggestedLineup: Team['lineup']) => {
+    if (!selectedTeam) return;
+    updateTeam({ ...selectedTeam, lineup: suggestedLineup });
+  };
+
   if (sharedRotation) {
     return (
       <div className="app-shell share-shell">
@@ -421,53 +472,43 @@ function App() {
 
         <div className="team-list">
           {teams.map((team) => (
-            <button
+            <div
               key={team.id}
               className={`team-item ${selectedTeam?.id === team.id ? 'active' : ''}`}
-              onClick={() => setSelectedTeamId(team.id)}
             >
-              <div className="team-name-wrap">
-                <span className={`dot ${selectedTeam?.id === team.id ? 'active' : ''}`} />
-                <span>{team.name}</span>
-              </div>
-              <small>{formatDate(team.updatedAt)}</small>
-            </button>
+              <button
+                type="button"
+                className="team-select"
+                onClick={() => setSelectedTeamId(team.id)}
+                aria-label={`Select ${team.name}`}
+              >
+                <div className="team-name-wrap">
+                  <span className={`dot ${selectedTeam?.id === team.id ? 'active' : ''}`} />
+                  <span>{team.name}</span>
+                </div>
+                <small>{formatDate(team.updatedAt)}</small>
+              </button>
+              <button
+                type="button"
+                className="team-delete-button"
+                onClick={() => {
+                  if (!window.confirm(`Delete ${team.name}? This cannot be undone.`)) return;
+                  setTeams((current) => current.filter((item) => item.id !== team.id));
+                  if (selectedTeamId === team.id) {
+                    const nextTeam = teams.find((item) => item.id !== team.id) ?? null;
+                    setSelectedTeamId(nextTeam?.id ?? '');
+                  }
+                }}
+                aria-label={`Delete ${team.name}`}
+              >
+                Delete
+              </button>
+            </div>
           ))}
         </div>
       </aside>
 
       <main className="main-panel">
-        <header className="topbar">
-          <div>
-            <div className="eyebrow">Match-day workspace</div>
-            <h1>Lineup board</h1>
-          </div>
-
-          {selectedTeam && (
-            <div className="topbar-actions">
-              <button className="button muted" onClick={() => window.location.reload()}>
-                Refresh data
-              </button>
-              <select value={selectedTeamId} onChange={(event) => setSelectedTeamId(event.target.value)}>
-                {teams.map((team) => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}
-                  </option>
-                ))}
-              </select>
-              <button className="button secondary" onClick={copyCurrentShareLink}>
-                Share link
-              </button>
-              <button className="button secondary" onClick={shareCurrentRotation}>
-                Share lineup
-              </button>
-              <button className="button danger" onClick={handleDeleteTeam}>
-                Delete current team
-              </button>
-            </div>
-          )}
-        </header>
-
         {showCreate && (
           <div className="create-row">
             <input
@@ -507,11 +548,10 @@ function App() {
 
             <SummaryStrip summary={summary} team={selectedTeam} />
             <ShareControls team={selectedTeam} />
-            <RotationSuggestions team={selectedTeam} onSave={updateTeam} />
 
             <div className="board-grid">
               <div className="stack-col">
-                <CourtBoard team={selectedTeam} onAssign={onAssignPlayerToPosition} />
+                <CourtBoard team={selectedTeam} onAssign={onAssignPlayerToPosition} onApplySuggestion={applySuggestedRotation} />
                 <BenchPlan
                   team={selectedTeam}
                   onAdd={onAddBenchPlayer}
@@ -665,12 +705,21 @@ function ShareControls({ team }: { team: Team }) {
 
   return (
     <div className="share-box">
-      <div className="small-heading-row">
-        <div className="small-heading">Share rotation</div>
-      </div>
-      <div className="share-actions">
-        <button className="button primary" onClick={copyLink}>Copy view-only link</button>
-        <button className="button secondary" onClick={exportPng}>Download PNG</button>
+      <div className="share-row">
+        <div>
+          <div className="mini-label">Share</div>
+          <div className="small-heading">Rotation</div>
+        </div>
+        <div className="share-actions compact">
+          <button className="button primary icon-button-text" onClick={copyLink} aria-label="Copy view-only link">
+            <span aria-hidden="true">🔗</span>
+            <span>Copy link</span>
+          </button>
+          <button className="button secondary icon-button-text" onClick={exportPng} aria-label="Download PNG image">
+            <span aria-hidden="true">⬇️</span>
+            <span>PNG</span>
+          </button>
+        </div>
       </div>
       {status && <div className="suggestion-feedback">{status}</div>}
     </div>
@@ -723,121 +772,6 @@ function ShareRotationCard({ teamName, players, lineup }: { teamName: string; pl
           })}
         </div>
       </div>
-    </section>
-  );
-}
-
-function RotationSuggestions({ team, onSave }: { team: Team; onSave: (team: Team) => void }) {
-  const [rotationSeed, setRotationSeed] = useState(0);
-  const [rejectedKeys, setRejectedKeys] = useState<string[]>([]);
-  const [feedback, setFeedback] = useState<'approve' | 'deny' | null>(null);
-
-  const suggestions = useMemo(
-    () => generateSuggestions(team, rotationSeed, rejectedKeys),
-    [team, rotationSeed, rejectedKeys],
-  );
-
-  const current = suggestions[0] ?? null;
-  const currentKey = current ? lineupSignature(current) : '';
-
-  useEffect(() => {
-    setRotationSeed(0);
-    setRejectedKeys([]);
-    setFeedback(null);
-  }, [team.id]);
-
-  const repopulate = () => {
-    setRotationSeed((value) => value + 1);
-    setFeedback(null);
-  };
-
-  const approve = () => {
-    if (!current) return;
-    onSave({ ...team, lineup: current });
-    setFeedback('approve');
-  };
-
-  const deny = () => {
-    if (!current || !currentKey) return;
-    setRejectedKeys((keys) => [...keys, currentKey].slice(-8));
-    setFeedback('deny');
-    setRotationSeed((value) => value + 1);
-  };
-
-  if (team.players.filter((player) => player.available).length < POSITIONS.length) {
-    return (
-      <div className="suggestion-box">
-        <div className="small-heading">Rotation suggestions</div>
-        <p>
-          {team.players.filter((player) => player.available).length}/6 players are available. Mark at least six players available to generate a full rotation.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <section className="suggestion-box">
-      <div className="small-heading-row">
-        <div className="small-heading">Rotation suggestions</div>
-        <button className="button secondary" onClick={repopulate}>
-          Repopulate
-        </button>
-      </div>
-
-      {current ? (
-        <>
-          <div className="suggestion-meta">
-            Suggested rotation {rotationSeed + 1}
-          </div>
-
-          <div className="suggestion-preview">
-            <div className="suggestion-preview-grid">
-              {current.positions.map((assignment) => {
-                const player = team.players.find((item) => item.id === assignment.playerId);
-                const position = POSITIONS.find((item) => item.key === assignment.position);
-                return (
-                  <div key={assignment.position} className="suggestion-preview-slot">
-                    <span>{position?.short ?? assignment.position}</span>
-                    <strong>{player?.name ?? 'Open'}</strong>
-                    <small>{player?.role ?? 'Unassigned'}</small>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="suggestion-bench-preview">
-              <div className="suggestion-bench-label">Bench rotation</div>
-              <div className="suggestion-bench-list">
-                {current.benchOrder.map((id, index) => {
-                  const player = team.players.find((item) => item.id === id);
-                  return (
-                    <div key={`${id}-${index}`} className="suggestion-bench-item">
-                      <span>{index + 1}</span>
-                      <strong>{player?.name ?? 'Player'}</strong>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          <div className="suggestion-actions">
-            <button className="button primary" onClick={approve}>
-              Approve suggestion
-            </button>
-            <button className="button muted" onClick={deny}>
-              Deny suggestion
-            </button>
-          </div>
-          {feedback && (
-            <div className="suggestion-feedback">
-              {feedback === 'approve' ? 'Approved and saved to the current board.' : 'Suggestion denied. A new rotation is ready.'}
-            </div>
-          )}
-        </>
-      ) : (
-        <p>Suggested rotations prefer each player’s marked role, while keeping the six positions in a valid 4-2 court pattern.</p>
-      )}
     </section>
   );
 }
@@ -925,9 +859,23 @@ function generateSuggestions(team: Team, seed = 0, rejectedKeys: string[] = []) 
   return candidates;
 }
 
-function CourtBoard({ team, onAssign }: { team: Team; onAssign: (position: CourtPosition, playerId: string) => void }) {
+function CourtBoard({ team, onAssign, onApplySuggestion }: { team: Team; onAssign: (position: CourtPosition, playerId: string) => void; onApplySuggestion: (lineup: Team['lineup']) => void; }) {
   const available = team.players.filter((player) => player.available);
   const playerById = new Map(team.players.map((player) => [player.id, player]));
+  const [suggestionSeed, setSuggestionSeed] = useState(0);
+
+  useEffect(() => {
+    setSuggestionSeed(0);
+  }, [team.id]);
+
+  const suggestion = useMemo(() => generateSuggestions(team, suggestionSeed)[0] ?? null, [team, suggestionSeed]);
+
+  const handleUseSuggestion = () => {
+    const nextSuggestion = generateSuggestions(team, suggestionSeed)[0] ?? null;
+    if (!nextSuggestion) return;
+    onApplySuggestion(nextSuggestion);
+    setSuggestionSeed((current) => current + 1);
+  };
 
   return (
     <section className="panel-card">
@@ -936,7 +884,14 @@ function CourtBoard({ team, onAssign }: { team: Team; onAssign: (position: Court
           <div className="mini-badge primary">V</div>
           <h3>Starting six</h3>
         </div>
-        <span>{team.lineup.positions.filter((assignment) => assignment.playerId).length}/6 filled</span>
+        <div className="court-header-actions">
+          <span>{team.lineup.positions.filter((assignment) => assignment.playerId).length}/6 filled</span>
+          {available.length >= POSITIONS.length && suggestion && (
+            <button className="button secondary small-action" onClick={handleUseSuggestion} aria-label="Suggest lineup">
+              ↻ Suggest lineup
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="court-axis">
