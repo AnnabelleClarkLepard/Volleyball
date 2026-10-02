@@ -12,6 +12,7 @@ import {
   ChevronDown,
   ChevronUp,
   CircleDashed,
+  Pencil,
   ClipboardCheck,
   Download,
   GripVertical,
@@ -726,7 +727,7 @@ function ReadOnlyStartingSix({ team }: { team: Team }) {
             const player = playerId ? playerById.get(playerId) : undefined;
             return (
               <div key={position.key} className="court-cell relative z-10 min-w-0 overflow-hidden rounded-lg border border-secondary bg-card p-2.5">
-                <div className="font-mono-app text-[9px] font-medium uppercase tracking-[.1em] text-muted-foreground">{position.label}</div>
+                <div className="font-mono-app text-[9px] font-medium uppercase tracking-[.1em] text-muted-foreground">{position.short}</div>
                 <div className="mt-2 truncate text-sm font-bold text-foreground">{player?.name ?? 'Unassigned'}</div>
       <div className="mt-1 truncate text-[10px] text-muted-foreground">{player ? player.role : 'No player assigned'}</div>
               </div>
@@ -954,16 +955,28 @@ function CourtBoard({ team, onSave }: { team: Team; onSave: (team: Team) => void
             const player = assignment?.playerId ? playerById.get(assignment.playerId) : undefined;
             return (
               <div key={position.key} className="court-cell relative z-10 min-w-0">
-                <label className="mb-1.5 block font-mono-app text-[9px] font-medium uppercase tracking-[.1em] text-primary-foreground/80">{position.short} <span className="hidden md:inline">· {position.label}</span></label>
-                <div className={`min-w-0 overflow-hidden rounded-lg border p-2 transition-transform duration-200 ${player ? 'border-secondary bg-card' : 'border-dashed border-primary-foreground/45 bg-primary-foreground/10'}`}>
-                  <select data-testid={`select-position-${position.key}`} value={assignment?.playerId ?? ''} onChange={(event) => assign(position.key, event.target.value)} className={`court-select block min-w-0 w-full appearance-none bg-transparent text-xs font-semibold outline-none ${player ? 'text-foreground' : 'text-primary-foreground/80'}`}>
+                <label className="mb-1.5 block font-mono-app text-[9px] font-medium uppercase tracking-[.1em] text-primary-foreground/80">{position.short}</label>
+                <div className={`relative min-w-0 overflow-hidden rounded-lg border transition-transform duration-200 ${player ? 'border-secondary bg-card' : 'border-dashed border-primary-foreground/45 bg-primary-foreground/10'}`}>
+                  <select data-testid={`select-position-${position.key}`} value={assignment?.playerId ?? ''} onChange={(event) => assign(position.key, event.target.value)} className="absolute inset-0 min-w-0 w-full appearance-none bg-transparent opacity-0 cursor-pointer">
                     <option value="">Unassigned</option>
                     {availablePlayers.map((option) => <option key={option.id} value={option.id}>{option.jerseyNumber ? `#${option.jerseyNumber} ` : ''}{option.name}</option>)}
                   </select>
-                  <div className="mt-1 flex items-center justify-between">
-                    <span className={`truncate text-[10px] ${player ? 'text-muted-foreground' : 'text-primary-foreground/55'}`}>{player ? player.role : 'Choose player'}</span>
-                    {player ? <Check size={12} className="shrink-0 text-primary" /> : <Plus size={12} className="shrink-0 text-primary-foreground/60" />}
+                  <div className="flex items-center gap-2 px-2 py-1.5">
+                    {player ? (
+                      <>
+                        <span className="truncate text-[7.5px] font-medium text-foreground flex-1">{player.name}</span>
+                        <button type="button" aria-label={`Edit ${position.label} player`} className="flex h-4 w-4 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary/5 text-primary" onClick={(event) => { event.preventDefault(); event.stopPropagation(); const select = document.querySelector(`[data-testid="select-position-${position.key}"]`) as HTMLSelectElement | null; select?.focus(); select?.click(); }}>
+                          <Pencil size={9} />
+                        </button>
+                      </>
+                    ) : (
+                      <button type="button" aria-label={`Assign player to ${position.label}`} className="flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-primary-foreground/30 bg-primary-foreground/5 px-1.5 py-1 text-[7.5px] font-medium text-primary-foreground/70">
+                        <Plus size={10} />
+                        <span>Assign</span>
+                      </button>
+                    )}
                   </div>
+                  {player && <div className="px-2 pb-1 text-[6.5px] text-primary-foreground/60">{player.role}</div>}
                 </div>
               </div>
             );

@@ -783,7 +783,7 @@ select,
   border: 1px solid rgba(32, 52, 66, 0.08);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-soft);
-  padding: 18px 20px;
+  padding: 18px 12px;
   min-width: 0;
   width: 100%;
   max-width: 100%;
@@ -805,7 +805,7 @@ select,
   border: 1px solid rgba(32, 52, 66, 0.08);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-soft);
-  padding: 18px 20px;
+  padding: 18px 12px;
   min-width: 0;
   width: 100%;
   max-width: 100%;
@@ -880,6 +880,14 @@ select,
   padding: 10px;
   min-height: 116px;
   min-width: 0;
+}
+
+.court-slot:nth-child(-n+3) {
+  margin-bottom: 6px;
+}
+
+.court-slot:nth-child(n+4) {
+  margin-top: 6px;
 }
 
 .court-slot label {
@@ -1366,7 +1374,27 @@ select,
   }
 
   .court-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    padding: 10px;
+  }
+
+  .court-slot {
+    padding: 6px;
+    min-height: 80px;
+  }
+
+  .court-slot:nth-child(-n+3) {
+    margin-bottom: 5px;
+  }
+
+  .court-slot:nth-child(n+4) {
+    margin-top: 5px;
+  }
+
+  .court-slot label {
+    font-size: 0.5rem;
+    margin-bottom: 6px;
   }
 
   .suggestion-actions,
@@ -1439,11 +1467,30 @@ select,
   }
 
   .summary-card.with-border {
-    border-top: 1px solid var(--stroke);
   }
 
   .court-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 3px;
+    padding: 8px;
+  }
+
+  .court-slot {
+    padding: 5px;
+    min-height: 70px;
+  }
+
+  .court-slot:nth-child(-n+3) {
+    margin-bottom: 4px;
+  }
+
+  .court-slot:nth-child(n+4) {
+    margin-top: 4px;
+  }
+
+  .court-slot label {
+    font-size: 0.45rem;
+    margin-bottom: 4px;
   }
 
   .bench-item {

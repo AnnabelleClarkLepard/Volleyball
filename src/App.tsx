@@ -3,6 +3,8 @@ import {
   ChevronUp,
   Download,
   Link2,
+  Pencil,
+  Plus,
   WandSparkles,
   X,
 } from 'lucide-react';
@@ -926,7 +928,6 @@ function CourtBoard({ team, onAssign, onApplySuggestion, suggestion, onUseSugges
             <div key={position.key} className="court-slot">
               <label>
                 <span>{position.short}</span>
-                <small>· {position.label}</small>
               </label>
               <select value={assignment?.playerId ?? ''} onChange={(event) => onAssign(position.key, event.target.value)}>
                 <option value="">Unassigned</option>
