@@ -692,7 +692,11 @@ select,
 }
 
 .court-header-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
+  flex-wrap: wrap;
 }
 
 .court-header-actions {
@@ -702,6 +706,7 @@ select,
   flex-wrap: wrap;
   justify-content: flex-start;
   margin-left: 0;
+  width: fit-content;
 }
 
 .court-filled-badge {
@@ -716,7 +721,14 @@ select,
   letter-spacing: 0.08em;
   text-transform: none;
   white-space: nowrap;
-  width: auto;
+  width: fit-content;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.court-filled-badge.full {
+  background: rgba(22, 118, 95, 0.12);
+  color: #0e6d59;
+  border: 1px solid rgba(22, 118, 95, 0.2);
 }
 
 .small-action {
@@ -729,7 +741,7 @@ select,
   align-items: center;
   justify-content: center;
   gap: 6px;
-  width: auto;
+  width: fit-content;
 }
 
 .share-actions.compact {
@@ -1345,11 +1357,11 @@ select,
   }
 
   .court-header-actions {
-    width: 100%;
+    width: fit-content;
   }
 
   .court-header-actions > * {
-    flex: 1 1 100%;
+    flex: 0 0 auto;
   }
 }
 
