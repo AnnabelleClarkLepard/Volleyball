@@ -271,6 +271,16 @@ function App() {
   }, []);
 
   const selectedTeam = teams.find((team) => team.id === selectedTeamId) ?? teams[0] ?? null;
+  const [suggestionSeed, setSuggestionSeed] = useState(0);
+
+  useEffect(() => {
+    setSuggestionSeed(0);
+  }, [selectedTeamId]);
+
+  const rotationSuggestion = useMemo(() => {
+    if (!selectedTeam) return null;
+    return generateSuggestions(selectedTeam, suggestionSeed)[0] ?? null;
+  }, [selectedTeam, suggestionSeed]);
 
   const clearSharedRotation = () => {
     const url = new URL(window.location.href);
@@ -434,6 +444,14 @@ function App() {
     updateTeam({ ...selectedTeam, lineup: suggestedLineup });
   };
 
+  const handleUseSuggestion = () => {
+    if (!selectedTeam) return;
+    const nextSuggestion = generateSuggestions(selectedTeam, suggestionSeed)[0] ?? null;
+    if (!nextSuggestion) return;
+    applySuggestedRotation(nextSuggestion);
+    setSuggestionSeed((current) => current + 1);
+  };
+
   if (sharedRotation) {
     return (
       <div className="app-shell share-shell">
@@ -553,14 +571,35 @@ function App() {
 
             <div className="board-grid">
               <div className="stack-col">
-                <CourtBoard team={selectedTeam} onAssign={onAssignPlayerToPosition} onApplySuggestion={applySuggestedRotation} />
-                <BenchPlan
-                  team={selectedTeam}
-                  onAdd={onAddBenchPlayer}
-                  onMove={onMoveBench}
-                  onRemove={onRemoveBench}
-                  onSetReplacement={onSetBenchReplacement}
-                />
+                <section className="lineup-card">
+                  <div className="panel-header lineup-header">
+                    <div className="header-row">
+                      <h3>Lineup</h3>
+                    </div>
+                    {selectedTeam.players.filter((player) => player.available).length >= POSITIONS.length && rotationSuggestion && (
+                      <button className="button secondary small-action" onClick={handleUseSuggestion} aria-label="Autosuggest lineup">
+                        <WandSparkles size={14} aria-hidden="true" />
+                        Autosuggest
+                      </button>
+                    )}
+                  </div>
+                  <div className="lineup-stack">
+                    <CourtBoard
+                      team={selectedTeam}
+                      onAssign={onAssignPlayerToPosition}
+                      onApplySuggestion={applySuggestedRotation}
+                      suggestion={rotationSuggestion}
+                      onUseSuggestion={handleUseSuggestion}
+                    />
+                    <BenchPlan
+                      team={selectedTeam}
+                      onAdd={onAddBenchPlayer}
+                      onMove={onMoveBench}
+                      onRemove={onRemoveBench}
+                      onSetReplacement={onSetBenchReplacement}
+                    />
+                  </div>
+                </section>
               </div>
               <RosterPanel team={selectedTeam} onAdd={addPlayer} onToggleAvailability={updatePlayer} onDelete={removePlayer} />
             </div>
@@ -857,43 +896,21 @@ function generateSuggestions(team: Team, seed = 0, rejectedKeys: string[] = []) 
   return candidates;
 }
 
-function CourtBoard({ team, onAssign, onApplySuggestion }: { team: Team; onAssign: (position: CourtPosition, playerId: string) => void; onApplySuggestion: (lineup: Team['lineup']) => void; }) {
+function CourtBoard({ team, onAssign, onApplySuggestion, suggestion, onUseSuggestion }: { team: Team; onAssign: (position: CourtPosition, playerId: string) => void; onApplySuggestion: (lineup: Team['lineup']) => void; suggestion: Team['lineup'] | null; onUseSuggestion: () => void; }) {
   const available = team.players.filter((player) => player.available);
   const playerById = new Map(team.players.map((player) => [player.id, player]));
-  const [suggestionSeed, setSuggestionSeed] = useState(0);
-
-  useEffect(() => {
-    setSuggestionSeed(0);
-  }, [team.id]);
-
-  const suggestion = useMemo(() => generateSuggestions(team, suggestionSeed)[0] ?? null, [team, suggestionSeed]);
-
-  const handleUseSuggestion = () => {
-    const nextSuggestion = generateSuggestions(team, suggestionSeed)[0] ?? null;
-    if (!nextSuggestion) return;
-    onApplySuggestion(nextSuggestion);
-    setSuggestionSeed((current) => current + 1);
-  };
 
   return (
     <section className="panel-card">
       <div className="panel-header court-header">
         <div className="header-row court-header-title">
           <h3>Starting six</h3>
-          <span
-            className={`court-filled-badge ${team.lineup.positions.filter((assignment) => assignment.playerId).length === POSITIONS.length ? 'full' : ''}`}
-          >
-            {team.lineup.positions.filter((assignment) => assignment.playerId).length}/6 filled
-          </span>
         </div>
-        <div className="court-header-actions">
-          {available.length >= POSITIONS.length && suggestion && (
-            <button className="button secondary small-action" onClick={handleUseSuggestion} aria-label="Suggest rotation">
-              <WandSparkles size={14} aria-hidden="true" />
-              Rotation
-            </button>
-          )}
-        </div>
+        <span
+          className={`court-filled-badge ${team.lineup.positions.filter((assignment) => assignment.playerId).length === POSITIONS.length ? 'full' : ''}`}
+        >
+          {team.lineup.positions.filter((assignment) => assignment.playerId).length}/6 filled
+        </span>
       </div>
 
       <div className="court-axis">

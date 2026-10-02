@@ -697,6 +697,7 @@ select,
   gap: 10px;
   min-width: 0;
   flex-wrap: wrap;
+  margin-right: auto;
 }
 
 .court-header-actions {
@@ -775,6 +776,28 @@ select,
   display: flex;
   flex-direction: column;
   gap: 22px;
+}
+
+.lineup-card {
+  background: rgba(255, 255, 255, 0.42);
+  border: 1px solid rgba(32, 52, 66, 0.08);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-soft);
+  padding: 18px 20px;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.lineup-header {
+  margin-bottom: 14px;
+  justify-content: space-between;
+}
+
+.lineup-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
 .panel-card {
