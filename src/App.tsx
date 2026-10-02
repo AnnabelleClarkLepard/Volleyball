@@ -1,3 +1,11 @@
+import {
+  ChevronDown,
+  ChevronUp,
+  Download,
+  Link2,
+  WandSparkles,
+  X,
+} from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 type CourtPosition =
@@ -701,12 +709,12 @@ function ShareControls({ team, compact = false }: { team: Team; compact?: boolea
     <>
       <div className={compact ? 'share-actions compact' : 'share-actions'}>
         <button className={compact ? 'button primary small-action' : 'button primary icon-button-text'} onClick={copyLink} aria-label="Copy view-only link">
-          <span aria-hidden="true">🔗</span>
+          <Link2 size={15} aria-hidden="true" />
           {!compact && <span>Copy link</span>}
           {compact && <span>Copy</span>}
         </button>
         <button className={compact ? 'button secondary small-action' : 'button secondary icon-button-text'} onClick={exportPng} aria-label="Download PNG image">
-          <span aria-hidden="true">⬇️</span>
+          <Download size={15} aria-hidden="true" />
           {!compact && <span>PNG</span>}
           {compact && <span>PNG</span>}
         </button>
@@ -872,12 +880,17 @@ function CourtBoard({ team, onAssign, onApplySuggestion }: { team: Team; onAssig
       <div className="panel-header court-header">
         <div className="header-row court-header-title">
           <h3>Starting six</h3>
+          <span
+            className={`court-filled-badge ${team.lineup.positions.filter((assignment) => assignment.playerId).length === POSITIONS.length ? 'full' : ''}`}
+          >
+            {team.lineup.positions.filter((assignment) => assignment.playerId).length}/6 filled
+          </span>
         </div>
         <div className="court-header-actions">
-          <span className="court-filled-badge">{team.lineup.positions.filter((assignment) => assignment.playerId).length}/6 filled</span>
           {available.length >= POSITIONS.length && suggestion && (
-            <button className="button secondary small-action" onClick={handleUseSuggestion} aria-label="Suggest lineup">
-              ↻ Suggest lineup
+            <button className="button secondary small-action" onClick={handleUseSuggestion} aria-label="Suggest rotation">
+              <WandSparkles size={14} aria-hidden="true" />
+              Rotation
             </button>
           )}
         </div>
@@ -966,14 +979,14 @@ function BenchPlan({
                     ))}
                   </select>
                   <div className="bench-actions">
-                    <button onClick={() => onMove(index, -1)} disabled={index === 0}>
-                      ↑
+                    <button onClick={() => onMove(index, -1)} disabled={index === 0} aria-label={`Move ${player.name} up`}>
+                      <ChevronUp size={14} aria-hidden="true" />
                     </button>
-                    <button onClick={() => onMove(index, 1)} disabled={index === bench.length - 1}>
-                      ↓
+                    <button onClick={() => onMove(index, 1)} disabled={index === bench.length - 1} aria-label={`Move ${player.name} down`}>
+                      <ChevronDown size={14} aria-hidden="true" />
                     </button>
-                    <button className="danger" onClick={() => onRemove(player.id)}>
-                      ×
+                    <button className="danger" onClick={() => onRemove(player.id)} aria-label={`Remove ${player.name}`}>
+                      <X size={14} aria-hidden="true" />
                     </button>
                   </div>
                 </div>
