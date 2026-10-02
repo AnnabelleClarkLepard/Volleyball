@@ -75,8 +75,13 @@ html, body, #root {
   color: var(--text);
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   min-height: 100vh;
+  overflow-x: hidden;
   background: radial-gradient(circle at top, rgba(255, 255, 255, 0.7), transparent 45%), var(--bg);
 }
 
@@ -396,6 +401,15 @@ select,
   flex-wrap: wrap;
 }
 
+.roster-header-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-left: 0;
+}
+
 .compact-roster-header {
   margin-top: 4px;
   margin-bottom: 12px;
@@ -435,13 +449,18 @@ select,
 .pill {
   display: inline-flex;
   align-items: center;
-  padding: 6px 10px;
+  justify-content: center;
+  padding: 7px 12px;
+  border: 1px solid rgba(26, 80, 104, 0.12);
   border-radius: 999px;
-  font-size: 0.58rem;
+  font-size: 0.56rem;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  background: rgba(26, 80, 104, 0.08);
+  background: rgba(26, 80, 104, 0.04);
   color: var(--primary);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  white-space: nowrap;
 }
 
 .title-row h2 {
@@ -549,6 +568,11 @@ select,
   gap: 10px;
   flex-wrap: wrap;
   margin-top: 0;
+  flex-direction: row;
+}
+
+.share-actions > * {
+  flex-shrink: 0;
 }
 
 .share-actions.compact {
@@ -659,19 +683,66 @@ select,
   margin-top: 14px;
 }
 
-.court-header-actions {
+.court-header {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
+  gap: 12px;
   flex-wrap: wrap;
-  justify-content: flex-end;
+}
+
+.court-header-title {
+  min-width: 0;
+}
+
+.court-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  margin-left: 0;
+}
+
+.court-filled-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(26, 80, 104, 0.06);
+  color: var(--muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: none;
+  white-space: nowrap;
+  width: auto;
 }
 
 .small-action {
-  min-height: 36px;
+  min-height: 30px;
   padding: 0 12px;
   font-size: 0.72rem;
+  line-height: 1;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: auto;
+}
+
+.share-actions.compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  width: auto;
+}
+
+.share-actions.compact > * {
+  flex-shrink: 0;
+  width: auto;
 }
 
 .suggestion-feedback {
@@ -683,7 +754,7 @@ select,
 
 .board-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 440px);
   gap: 22px;
   align-items: start;
 }
@@ -701,6 +772,8 @@ select,
   box-shadow: var(--shadow-soft);
   padding: 18px 20px;
   min-width: 0;
+  width: 100%;
+  max-width: 100%;
 }
 
 .panel-header {
@@ -715,34 +788,7 @@ select,
 .header-row {
   display: flex;
   align-items: center;
-  gap: 10px;
   min-width: 0;
-}
-
-.mini-badge {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  display: grid;
-  place-items: center;
-  font-size: 0.7rem;
-  font-weight: 800;
-  flex-shrink: 0;
-}
-
-.mini-badge.primary {
-  background: rgba(26, 80, 104, 0.12);
-  color: var(--primary);
-}
-
-.mini-badge.secondary {
-  background: rgba(169, 214, 209, 0.5);
-  color: var(--primary);
-}
-
-.mini-badge.accent {
-  background: rgba(26, 80, 104, 0.08);
-  color: var(--primary);
 }
 
 .panel-header h3 {
@@ -949,6 +995,9 @@ select,
 
 .roster-panel {
   min-height: 100%;
+  width: 100%;
+  max-width: 440px;
+  min-width: 0;
 }
 
 .roster-list {
@@ -961,12 +1010,36 @@ select,
   background: rgba(245, 241, 234, 0.95);
   border: 1px solid var(--stroke);
   border-radius: 12px;
-  padding: 10px 12px;
-  display: flex;
+  padding: 8px 12px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   min-width: 0;
-  flex-wrap: wrap;
+  width: 100%;
+  max-width: 100%;
+}
+
+.roster-actions {
+  display: none;
+}
+
+.icon-button-inline {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  min-width: 18px;
+  min-height: 18px;
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.9;
 }
 
 .avatar {
@@ -996,10 +1069,69 @@ select,
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  min-width: 0;
+  line-height: 1.1;
+}
+
+.roster-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  line-height: 1.1;
 }
 
 .roster-topline strong {
   font-size: 0.94rem;
+  overflow-wrap: anywhere;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.54rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  min-height: 30px;
+  background: rgba(26, 80, 104, 0.05);
+  color: var(--primary);
+  cursor: pointer;
+  margin: 0;
+}
+
+.status-pill.available {
+  background: rgba(22, 118, 95, 0.1);
+  color: #0e6d59;
+  border-color: rgba(22, 118, 95, 0.18);
+}
+
+.status-pill.out {
+  background: rgba(188, 75, 75, 0.1);
+  color: var(--danger);
+  border-color: rgba(188, 75, 75, 0.2);
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot.available {
+  background: #16a56f;
+}
+
+.status-dot.out {
+  background: var(--danger);
 }
 
 .badge {
@@ -1017,16 +1149,17 @@ select,
 }
 
 .pill.toggle {
-  background: rgba(26, 80, 104, 0.08);
+  background: rgba(26, 80, 104, 0.04);
   color: var(--primary);
-  border: none;
-  padding: 6px 10px;
+  border: 1px solid rgba(26, 80, 104, 0.12);
+  padding: 7px 10px;
   border-radius: 999px;
   font-size: 0.6rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
 }
+
 
 .player-form {
   margin-top: 16px;
@@ -1137,6 +1270,16 @@ select,
   .board-grid {
     grid-template-columns: 1fr;
   }
+
+  .roster-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .court-header-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 720px) {
@@ -1160,32 +1303,57 @@ select,
   }
 
   .summary-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border-radius: 16px;
+  }
+
+  .summary-card {
+    padding: 12px 8px 10px;
   }
 
   .summary-card.with-border {
-    border-left: 0;
-    border-top: 1px solid var(--stroke);
+    border-left: 1px solid var(--stroke);
+    border-top: 0;
+  }
+
+  .summary-label {
+    letter-spacing: 0.08em;
+    font-size: 0.48rem;
+  }
+
+  .summary-number {
+    margin-top: 6px;
+    font-size: clamp(1.2rem, 5vw, 1.8rem);
+  }
+
+  .summary-detail {
+    font-size: 0.56rem;
   }
 
   .court-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .share-actions,
   .suggestion-actions,
   .form-actions {
     flex-direction: column;
   }
 
-  .share-actions > *,
   .suggestion-actions > *,
   .form-actions > * {
     width: 100%;
   }
+
+  .court-header-actions {
+    width: 100%;
+  }
+
+  .court-header-actions > * {
+    flex: 1 1 100%;
+  }
 }
 
-@media (max-width: 500px) {
+@media (max-width: 520px) {
   .sidebar {
     padding: 18px 14px;
   }
@@ -1196,7 +1364,47 @@ select,
   }
 
   .summary-strip {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border-radius: 14px;
+  }
+
+  .summary-card {
+    padding: 12px 8px 10px;
+  }
+
+  .summary-card.with-border {
+    border-left: 1px solid var(--stroke);
+    border-top: 0;
+  }
+
+  .summary-card:nth-child(3),
+  .summary-card:nth-child(4) {
+    border-top: 0;
+  }
+
+  .summary-label {
+    letter-spacing: 0.08em;
+    font-size: 0.48rem;
+  }
+
+  .summary-number {
+    font-size: clamp(1.2rem, 5vw, 1.8rem);
+  }
+
+  .team-item {
+    padding: 10px 10px 8px;
+  }
+
+  .team-delete-button {
+    min-width: 74px;
+  }
+
+  .roster-header-copy h2 {
+    font-size: clamp(2.2rem, 14vw, 3.3rem);
+  }
+
+  .summary-card.with-border {
+    border-top: 1px solid var(--stroke);
   }
 
   .court-grid {
@@ -1217,15 +1425,46 @@ select,
   }
 
   .roster-item {
-    align-items: flex-start;
+    align-items: start;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .roster-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    width: 100%;
+    margin-top: 2px;
+  }
+
+  .roster-actions > * {
+    flex: 0 1 auto;
   }
 
   .roster-body {
-    flex-basis: 100%;
+    flex-basis: auto;
   }
 
   .player-form {
     padding: 12px;
+  }
+
+  .share-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .share-actions > * {
+    width: 100%;
+  }
+
+  .share-actions.compact {
+    flex-direction: row;
+    width: auto;
+    flex-wrap: nowrap;
+  }
+
+  .share-actions.compact > * {
+    width: auto;
   }
 }
 
@@ -1234,79 +1473,4 @@ select,
   letter-spacing: -0.08em;
   margin: 0 0 18px;
   line-height: 1;
-}
-
-@media (max-width: 980px) {
-  .app-shell {
-    flex-direction: column;
-  }
-
-  .sidebar {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--stroke);
-  }
-
-  .board-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 640px) {
-  .topbar,
-  .content-wrap,
-  .create-row {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-
-  .topbar {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .topbar h1 {
-    font-size: 2rem;
-  }
-
-  .topbar-actions,
-  .create-row,
-  .small-heading-row,
-  .suggestion-actions,
-  .bench-controls,
-  .form-actions {
-    width: 100%;
-  }
-
-  .summary-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .summary-card.with-border {
-    border-left: none;
-    border-top: 1px solid var(--stroke);
-  }
-
-  .bench-item {
-    display: grid;
-    grid-template-columns: auto 1fr;
-  }
-
-  .bench-controls {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .roster-item {
-    align-items: flex-start;
-  }
-
-  .button {
-    width: 100%;
-  }
-
-  .team-item {
-    padding: 10px 10px 8px;
-  }
 }

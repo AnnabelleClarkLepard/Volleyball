@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type CourtPosition =
   | 'front-left'
@@ -455,14 +455,6 @@ function App() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand-row">
-          <div className="logo">V</div>
-          <div>
-            <div className="brand">sideline</div>
-            <div className="brand-subtitle">lineup desk</div>
-          </div>
-        </div>
-
         <div className="section-header">
           <span>Saved teams</span>
           <button className="ghost-button" onClick={() => setShowCreate(true)} aria-label="Create a new team">
@@ -543,11 +535,13 @@ function App() {
                 <h2>{selectedTeam.name}</h2>
                 <p>Set the six, check availability, then make the bench order obvious.</p>
               </div>
-              <div className="roster-header-date">Updated {formatDate(selectedTeam.updatedAt)}</div>
+              <div className="roster-header-actions">
+                <div className="roster-header-date">Updated {formatDate(selectedTeam.updatedAt)}</div>
+                <ShareControls team={selectedTeam} compact />
+              </div>
             </div>
 
             <SummaryStrip summary={summary} team={selectedTeam} />
-            <ShareControls team={selectedTeam} />
 
             <div className="board-grid">
               <div className="stack-col">
@@ -597,7 +591,7 @@ function SummaryStrip({ summary, team }: { summary: { totalPlayers: number; avai
   );
 }
 
-function ShareControls({ team }: { team: Team }) {
+function ShareControls({ team, compact = false }: { team: Team; compact?: boolean }) {
   const [status, setStatus] = useState('');
 
   const shareUrl = useMemo(() => {
@@ -704,25 +698,21 @@ function ShareControls({ team }: { team: Team }) {
   };
 
   return (
-    <div className="share-box">
-      <div className="share-row">
-        <div>
-          <div className="mini-label">Share</div>
-          <div className="small-heading">Rotation</div>
-        </div>
-        <div className="share-actions compact">
-          <button className="button primary icon-button-text" onClick={copyLink} aria-label="Copy view-only link">
-            <span aria-hidden="true">🔗</span>
-            <span>Copy link</span>
-          </button>
-          <button className="button secondary icon-button-text" onClick={exportPng} aria-label="Download PNG image">
-            <span aria-hidden="true">⬇️</span>
-            <span>PNG</span>
-          </button>
-        </div>
+    <>
+      <div className={compact ? 'share-actions compact' : 'share-actions'}>
+        <button className={compact ? 'button primary small-action' : 'button primary icon-button-text'} onClick={copyLink} aria-label="Copy view-only link">
+          <span aria-hidden="true">🔗</span>
+          {!compact && <span>Copy link</span>}
+          {compact && <span>Copy</span>}
+        </button>
+        <button className={compact ? 'button secondary small-action' : 'button secondary icon-button-text'} onClick={exportPng} aria-label="Download PNG image">
+          <span aria-hidden="true">⬇️</span>
+          {!compact && <span>PNG</span>}
+          {compact && <span>PNG</span>}
+        </button>
       </div>
       {status && <div className="suggestion-feedback">{status}</div>}
-    </div>
+    </>
   );
 }
 
@@ -879,13 +869,12 @@ function CourtBoard({ team, onAssign, onApplySuggestion }: { team: Team; onAssig
 
   return (
     <section className="panel-card">
-      <div className="panel-header">
-        <div className="header-row">
-          <div className="mini-badge primary">V</div>
+      <div className="panel-header court-header">
+        <div className="header-row court-header-title">
           <h3>Starting six</h3>
         </div>
         <div className="court-header-actions">
-          <span>{team.lineup.positions.filter((assignment) => assignment.playerId).length}/6 filled</span>
+          <span className="court-filled-badge">{team.lineup.positions.filter((assignment) => assignment.playerId).length}/6 filled</span>
           {available.length >= POSITIONS.length && suggestion && (
             <button className="button secondary small-action" onClick={handleUseSuggestion} aria-label="Suggest lineup">
               ↻ Suggest lineup
@@ -950,7 +939,6 @@ function BenchPlan({
     <section className="panel-card">
       <div className="panel-header">
         <div className="header-row">
-          <div className="mini-badge secondary">↓</div>
           <h3>Bench rotation</h3>
         </div>
         <span>{bench.length} queued</span>
@@ -989,7 +977,6 @@ function BenchPlan({
                     </button>
                   </div>
                 </div>
-                {replacementPlayer && <div className="bench-replacement-text">{replacementPlayer.name}</div>}
               </div>
             );
           })
@@ -1026,77 +1013,178 @@ function RosterPanel({ team, onAdd, onToggleAvailability, onDelete }: {
   onToggleAvailability: (id: string, updates: Partial<Player>) => void;
   onDelete: (id: string) => void;
 }) {
-  const [name, setName] = useState('');
-  const [role, setRole] = useState<Role>('Outside Hitter');
-  const [note, setNote] = useState('');
+  const [draftName, setDraftName] = useState('');
+  const [draftRole, setDraftRole] = useState<Role>('Outside Hitter');
+  const [draftNote, setDraftNote] = useState('');
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editRole, setEditRole] = useState<Role>('Outside Hitter');
+  const [editNote, setEditNote] = useState('');
+  const rosterRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const resetDraft = () => {
+    setDraftName('');
+    setDraftRole('Outside Hitter');
+    setDraftNote('');
+  };
+
+  const resetEdit = () => {
+    setEditingId(null);
+    setEditName('');
+    setEditRole('Outside Hitter');
+    setEditNote('');
+  };
 
   const submitAdd = () => {
-    if (!name.trim()) return;
+    if (!draftName.trim()) return;
     onAdd({
       id: `player-${Date.now()}`,
-      name: name.trim(),
-      role,
+      name: draftName.trim(),
+      role: draftRole,
       available: true,
-      note: note.trim() || null,
+      note: draftNote.trim() || null,
     });
-    setName('');
-    setRole('Outside Hitter');
-    setNote('');
+    resetDraft();
   };
+
+  const beginEdit = (player: Player) => {
+    setEditingId(player.id);
+    setEditName(player.name);
+    setEditRole(player.role);
+    setEditNote(player.note ?? '');
+  };
+
+  const updateEditField = (player: Player, patch: Partial<{ name: string; role: Role; note: string; available: boolean }>) => {
+    const nextName = patch.name ?? editName;
+    const nextRole = patch.role ?? editRole;
+    const nextNote = patch.note ?? editNote;
+
+    if (patch.name !== undefined) {
+      setEditName(patch.name);
+      if (!patch.name.trim()) return;
+    }
+
+    if (patch.role !== undefined) {
+      setEditRole(patch.role);
+    }
+
+    if (patch.note !== undefined) {
+      setEditNote(patch.note);
+    }
+
+    onToggleAvailability(player.id, {
+      name: nextName.trim() || player.name,
+      role: nextRole,
+      note: nextNote.trim() || null,
+      available: patch.available ?? player.available,
+    });
+  };
+
+  useEffect(() => {
+    if (!editingId) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const activeCard = rosterRefs.current[editingId];
+      if (activeCard && !activeCard.contains(event.target as Node)) {
+        resetEdit();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [editingId]);
 
   return (
     <section className="panel-card roster-panel">
       <div className="panel-header">
         <div className="header-row">
-          <div className="mini-badge accent">R</div>
           <h3>Roster</h3>
         </div>
       </div>
 
       <div className="roster-list">
         {team.players.map((player) => (
-          <div key={player.id} className="roster-item">
+          <div
+            key={player.id}
+            className="roster-item"
+            onClick={() => {
+              if (editingId === player.id) {
+                resetEdit();
+              } else {
+                beginEdit(player);
+              }
+            }}
+            ref={(node) => {
+              rosterRefs.current[player.id] = node;
+            }}
+          >
             <div className={`avatar ${player.available ? '' : 'off'}`}>{initials(player.name)}</div>
             <div className="roster-body">
               <div className="roster-topline">
                 <strong>{player.name}</strong>
-                {team.lineup.positions.some((assignment) => assignment.playerId === player.id) && <span className="badge">Starter</span>}
+                <span className="badge">{player.role}</span>
               </div>
-              <small>{player.role}</small>
+              <div className="roster-meta">
+                <button
+                  type="button"
+                  className={`status-pill ${player.available ? 'available' : 'out'}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onToggleAvailability(player.id, { available: !player.available });
+                  }}
+                >
+                  <span className={`status-dot ${player.available ? 'available' : 'out'}`} />
+                  {player.available ? 'Available' : 'Out'}
+                </button>
+              </div>
             </div>
-            <button className="pill toggle" onClick={() => onToggleAvailability(player.id, { available: !player.available })}>
-              {player.available ? 'Available' : 'Out'}
-            </button>
-            <button className="icon-button danger" onClick={() => onDelete(player.id)}>
-              Delete
-            </button>
+            {editingId === player.id && (
+              <div className="player-form" style={{ gridColumn: '1 / -1', marginTop: '0.75rem' }}>
+                <input
+                  value={editName}
+                  onChange={(event) => updateEditField(player, { name: event.target.value })}
+                  placeholder="Player name"
+                />
+                <select value={editRole} onChange={(event) => updateEditField(player, { role: event.target.value as Role })}>
+                  {ROLE_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  value={editNote}
+                  onChange={(event) => updateEditField(player, { note: event.target.value })}
+                  placeholder="Match note (optional)"
+                />
+                <div className="form-actions">
+                  <button className="button danger" onClick={() => {
+                    onDelete(player.id);
+                    resetEdit();
+                  }}>
+                    Delete
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
 
       <div className="player-form">
-        <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Player name" />
-        <select value={role} onChange={(event) => setRole(event.target.value as Role)}>
+        <input value={draftName} onChange={(event) => setDraftName(event.target.value)} placeholder="Player name" />
+        <select value={draftRole} onChange={(event) => setDraftRole(event.target.value as Role)}>
           {ROLE_OPTIONS.map((option) => (
             <option key={option} value={option}>
               {option}
             </option>
           ))}
         </select>
-        <input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Match note (optional)" />
+        <input value={draftNote} onChange={(event) => setDraftNote(event.target.value)} placeholder="Match note (optional)" />
         <div className="form-actions">
-          <button className="button primary" onClick={submitAdd} disabled={!name.trim()}>
+          <button className="button primary" onClick={submitAdd} disabled={!draftName.trim()}>
             Add to roster
-          </button>
-          <button
-            className="button muted"
-            onClick={() => {
-              setName('');
-              setNote('');
-              setRole('Outside Hitter');
-            }}
-          >
-            Clear
           </button>
         </div>
       </div>
