@@ -925,12 +925,12 @@ function CourtBoard({ team, onAssign, onApplySuggestion, suggestion, onUseSugges
           const player = assignment?.playerId ? playerById.get(assignment.playerId) : undefined;
 
           return (
-            <div key={position.key} className="court-slot">
+            <div key={position.key} className={`court-slot ${!assignment?.playerId ? 'empty' : ''}`}>
               <label>
                 <span>{position.short}</span>
               </label>
               <select value={assignment?.playerId ?? ''} onChange={(event) => onAssign(position.key, event.target.value)}>
-                <option value="">Unassigned</option>
+                <option value="">—</option>
                 {available.map((option) => (
                   <option key={option.id} value={option.id}>
                     {option.name}
