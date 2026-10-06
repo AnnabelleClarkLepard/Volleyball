@@ -921,6 +921,11 @@ select,
   background-size: 12px 12px;
   border-radius: 8px;
   padding: 4px 20px 4px 4px;
+  color: var(--text);
+}
+
+.court-slot select option {
+  color: var(--text);
 }
 
 .slot-meta {
@@ -1408,6 +1413,11 @@ select,
     padding: 4px 20px 4px 4px;
     background-position: right 4px center;
     border-radius: 8px;
+    color: var(--text);
+  }
+
+  .court-slot select option {
+    color: var(--text);
   }
 
   .suggestion-actions,
