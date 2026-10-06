@@ -745,11 +745,21 @@ function ShareControls({ team, compact = false }: { team: Team; compact?: boolea
       context.fillText(`${index + 1}. ${player.name} — ${player.role}`, 80, benchY + index * 28);
     });
 
-    const link = document.createElement('a');
-    link.href = canvas.toDataURL('image/png');
-    link.download = `${team.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'volleyball'}-rotation.png`;
-    link.click();
-    setStatus('PNG downloaded.');
+    const filename = `${team.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'volleyball'}-rotation.png`;
+    
+    // Convert canvas to blob and download
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      setStatus('PNG downloaded.');
+    }, 'image/png');
   };
 
   return (
