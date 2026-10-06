@@ -336,7 +336,13 @@ function App() {
       used.add(assignment.playerId);
     }
 
-    updateTeam({ ...selectedTeam, lineup: { ...selectedTeam.lineup, positions: nextPositions } });
+    // If assigning a player to the court, remove them from the bench
+    let nextBenchOrder = selectedTeam.lineup.benchOrder;
+    if (playerId) {
+      nextBenchOrder = nextBenchOrder.filter((id) => id !== playerId);
+    }
+
+    updateTeam({ ...selectedTeam, lineup: { ...selectedTeam.lineup, positions: nextPositions, benchOrder: nextBenchOrder } });
   };
 
   const onAddBenchPlayer = (playerId: string) => {
