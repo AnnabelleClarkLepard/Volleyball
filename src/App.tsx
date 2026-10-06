@@ -1171,7 +1171,7 @@ function RosterPanel({ team, onAdd, onToggleAvailability, onDelete }: {
               </div>
             </div>
             {editingId === player.id && (
-              <div className="player-form" style={{ gridColumn: '1 / -1', marginTop: '0.75rem' }}>
+              <div className="player-form" style={{ gridColumn: '1 / -1', marginTop: '0.75rem' }} onClick={(event) => event.stopPropagation()}>
                 <input
                   value={editName}
                   onChange={(event) => updateEditField(player, { name: event.target.value })}
