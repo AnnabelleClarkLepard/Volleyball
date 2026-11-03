@@ -689,7 +689,7 @@ function ShareControls({ team, compact = false }: { team: Team; compact?: boolea
 
     const padding = 16;
     const benchTitleGap = 24;
-    const benchListTopGap = 52;
+    const benchListTopGap = 72;
     const benchRowHeight = 28;
     const benchBoxY = 560;
     const benchBoxWidth = 1080;
