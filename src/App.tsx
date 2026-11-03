@@ -675,9 +675,33 @@ function ShareControls({ team, compact = false }: { team: Team; compact?: boolea
   };
 
   const exportPng = () => {
+    const positions = [
+      ['Front Left', 'front-left'],
+      ['Front Middle', 'front-middle'],
+      ['Front Right', 'front-right'],
+      ['Back Left', 'back-left'],
+      ['Back Middle', 'back-middle'],
+      ['Back Right', 'back-right'],
+    ] as const;
+
+    const playerMap = new Map(team.players.map((player) => [player.id, player]));
+    const bench = team.lineup.benchOrder.map((id) => playerMap.get(id)).filter(Boolean) as Player[];
+
+    const padding = 16;
+    const benchTitleGap = 24;
+    const benchRowHeight = 28;
+    const benchStartY = 636;
+    const benchBoxY = 560;
+    const benchBoxWidth = 1080;
+    const benchBoxX = 60;
+    const benchContentY = benchStartY - benchBoxY;
+    const benchRowsHeight = Math.max(bench.length, 1) * benchRowHeight;
+    const benchBoxHeight = benchContentY + benchRowsHeight + padding;
+    const canvasHeight = benchBoxY + benchBoxHeight + padding;
+
     const canvas = document.createElement('canvas');
     canvas.width = 1200;
-    canvas.height = 760;
+    canvas.height = canvasHeight;
     const context = canvas.getContext('2d');
     if (!context) return;
 
@@ -691,16 +715,6 @@ function ShareControls({ team, compact = false }: { team: Team; compact?: boolea
     context.fillStyle = '#53656d';
     context.fillText('Volleyball lineup rotation', 64, 120);
 
-    const positions = [
-      ['Front Left', 'front-left'],
-      ['Front Middle', 'front-middle'],
-      ['Front Right', 'front-right'],
-      ['Back Left', 'back-left'],
-      ['Back Middle', 'back-middle'],
-      ['Back Right', 'back-right'],
-    ] as const;
-
-    const playerMap = new Map(team.players.map((player) => [player.id, player]));
     const startX = 80;
     const startY = 180;
     const cardWidth = 300;
@@ -731,18 +745,17 @@ function ShareControls({ team, compact = false }: { team: Team; compact?: boolea
       context.fillText(player?.role ?? 'Waiting for player', x + 20, y + 106);
     });
 
-    const bench = team.lineup.benchOrder.map((id) => playerMap.get(id)).filter(Boolean) as Player[];
-    const benchY = 620;
+    const benchY = benchStartY;
     context.fillStyle = '#eaf2f4';
-    context.fillRect(60, 560, 1080, 150);
+    context.fillRect(benchBoxX, benchBoxY, benchBoxWidth, benchBoxHeight);
     context.fillStyle = '#163b4a';
     context.font = '700 22px Arial';
-    context.fillText('Bench rotation', 80, 600);
+    context.fillText('Bench rotation', benchBoxX + padding, benchBoxY + padding + benchTitleGap);
 
     bench.forEach((player, index) => {
       context.fillStyle = '#1f3442';
       context.font = '500 20px Arial';
-      context.fillText(`${index + 1}. ${player.name} — ${player.role}`, 80, benchY + index * 28);
+      context.fillText(`${index + 1}. ${player.name} — ${player.role}`, benchBoxX + padding, benchY + index * benchRowHeight);
     });
 
     const filename = `${team.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'volleyball'}-rotation.png`;
@@ -788,7 +801,6 @@ function ShareRotationCard({ teamName, players, lineup }: { teamName: string; pl
     <section className="panel-card share-readonly">
       <div className="panel-header">
         <div className="header-row">
-          <div className="mini-badge primary">V</div>
           <h3>{teamName}</h3>
         </div>
         <span>View only</span>

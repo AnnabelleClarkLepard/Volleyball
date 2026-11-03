@@ -1296,6 +1296,17 @@ select,
   font-weight: 700;
 }
 
+.share-bench-copy {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.share-bench-copy small {
+  margin: 0;
+}
+
 .empty-state {
   display: grid;
   place-items: center;
