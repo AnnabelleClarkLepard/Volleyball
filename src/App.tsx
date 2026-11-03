@@ -689,11 +689,13 @@ function ShareControls({ team, compact = false }: { team: Team; compact?: boolea
 
     const padding = 16;
     const benchTitleGap = 24;
+    const benchListTopGap = 52;
     const benchRowHeight = 28;
-    const benchStartY = 636;
     const benchBoxY = 560;
     const benchBoxWidth = 1080;
     const benchBoxX = 60;
+    const benchTitleY = benchBoxY + padding + benchTitleGap;
+    const benchStartY = benchTitleY + benchListTopGap;
     const benchContentY = benchStartY - benchBoxY;
     const benchRowsHeight = Math.max(bench.length, 1) * benchRowHeight;
     const benchBoxHeight = benchContentY + benchRowsHeight + padding;
